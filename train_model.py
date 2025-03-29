@@ -14,7 +14,8 @@ df = pd.read_csv("autism_screening.csv")
 df = df.drop(df[df['age'] == 383].index)
 df['age'] = df['age'].fillna(round(df['age'].mean()))
 
-df['ethnicity'] = df['ethnicity'].replace('?', 'others')
+df['ethnicity'] = df['ethnicity'].replace('?', 'Others')
+df['ethnicity'] = df['ethnicity'].replace('others', 'Others')
 df['relation'] = df['relation'].replace('?', 'Others')
 
 #drop the 'age_desc' column
