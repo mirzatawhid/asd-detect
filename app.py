@@ -30,45 +30,46 @@ def home():
 def predict():
     try:
         data = request.json
-        if not data:
-            return jsonify({"error": "Empty request received"}), 400
-
         features = []
 
-        # Validate and process numeric features
-        for feature in NUMERIC_FEATURES:
-            if feature in data:
-                try:
-                    features.append(float(data[feature]))  # Convert to float
-                except ValueError:
-                    return jsonify({"error": f"Invalid numeric value for {feature}: {data[feature]}"}), 400
-            else:
-                return jsonify({"error": f"Missing numeric feature: {feature}"}), 400
+        NUMERIC_FEATURES = [
+            "A1_Score", "A2_Score", "A3_Score", "A4_Score", "A5_Score",
+            "A6_Score", "A7_Score", "A8_Score", "A9_Score", "A10_Score",
+            "age", "result"
+        ]
+        CATEGORICAL_FEATURES = [
+            "gender", "ethnicity", "jundice", "austim",
+            "contry_of_res", "used_app_before", "relation"
+        ]
 
-        # Validate and encode categorical features
+        # 1️⃣ CHECK & APPEND NUMERIC FEATURES
+        for feature in NUMERIC_FEATURES:
+            if feature not in data:
+                return jsonify({"error": f"Missing numeric value: {feature}"}), 400
+            features.append(float(data[feature]))  # Ensure float type
+
+        # 2️⃣ CHECK & APPEND CATEGORICAL FEATURES
         for col in CATEGORICAL_FEATURES:
             if col in data:
                 if data[col] in label_encoders[col].classes_:
                     features.append(label_encoders[col].transform([data[col]])[0])
                 else:
-                    return jsonify({"error": f"Invalid category for {col}: {data[col]}"}), 400
+                    return jsonify({"error": f"Invalid value for {col}: {data[col]}"}), 400
             else:
-                return jsonify({"error": f"Missing categorical feature: {col}"}), 400
+                return jsonify({"error": f"Missing categorical value: {col}"}), 400
 
-        # Convert to NumPy array and reshape
-        X_input = np.array(features).reshape(1, -1)
+        # 3️⃣ CHECK FINAL FEATURE COUNT
+        print(f"Expected features: 19, Received features: {len(features)}")  # Debugging
 
-        # Predict ASD risk
-        prediction = model.predict(X_input)[0][0]
+        # 4️⃣ CONVERT TO NUMPY ARRAY & CHECK SHAPE
+        features = np.array(features).reshape(1, -1)
+        print(f"Final input shape: {features.shape}")  # Expected (1, 19)
 
-        # Format response
-        return jsonify({
-            "ASD_Risk_Score": round(float(prediction), 4),
-            "ASD_Prediction": "High Risk" if prediction > 0.5 else "Low Risk"
-        })
+        # 5️⃣ RUN PREDICTION
+        prediction = model.predict(features)[0][0]
+
+        return jsonify({"ASD_Risk": float(prediction)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000, debug=True)
